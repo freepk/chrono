@@ -2,6 +2,22 @@ package main
 
 const (
 	sqlCreateDb = `CREATE TABLE IF NOT EXISTS Participants (number INTEGER NOT NULL, name TEXT NOT NULL, category TEXT NOT NULL, team TEXT, CONSTRAINT PK_Participants PRIMARY KEY(number));
+WITH Nums AS (
+        SELECT 0 n
+        UNION ALL SELECT 1
+        UNION ALL SELECT 2
+        UNION ALL SELECT 3
+        UNION ALL SELECT 4
+        UNION ALL SELECT 5
+        UNION ALL SELECT 6
+        UNION ALL SELECT 7
+        UNION ALL SELECT 8
+        UNION ALL SELECT 9
+)
+INSERT INTO Participants(number, name, category, team)
+SELECT n0.n + n1.n * 10 + 1 as number, '' name, '' category, '' team
+FROM Nums n0
+        CROSS JOIN Nums n1;
 CREATE TABLE IF NOT EXISTS Passes (number INT NOT NULL, point INT NOT NULL, pass INT NOT NULL);
 CREATE INDEX IF NOT EXISTS IX_Passes_number_pass ON Passes (number, pass);`
 	sqlResults = `WITH FirstPasses AS (
