@@ -19,8 +19,8 @@ import (
 )
 
 type chronoInfo struct {
-	Chrono int
-	Point  int
+	Chrono string
+	Point  string
 }
 
 type resultInfo struct {
@@ -44,6 +44,10 @@ var (
 	glResultTpl *template.Template
 )
 
+func fmtDbName(c string) string {
+	return "chrono-" + c + ".db"
+}
+
 func openDb(name string) *sql.DB {
 	db, err := sql.Open("sqlite3", name)
 	if err != nil {
@@ -53,26 +57,26 @@ func openDb(name string) *sql.DB {
 	return db
 }
 
-func parseIntParam(m url.Values, k string) (int, error) {
+func parseIntParam(m url.Values, k string) (string, int, error) {
 	v, ok := m[k]
 	if !ok || len(v) != 1 {
-		return 0, errors.New("wrong parameter")
+		return "", 0, errors.New("wrong parameter")
 	}
 	r, err := strconv.Atoi(v[0])
 	if err != nil {
-		return 0, errors.New("wrong parameter")
+		return "", 0, errors.New("wrong parameter")
 	}
-	return r, nil
+	return v[0], r, nil
 }
 
 func copyHandler(w http.ResponseWriter, r *http.Request) {
 	m := r.URL.Query()
-	c, err := parseIntParam(m, "c")
+	c, _, err := parseIntParam(m, "c")
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	name := fmt.Sprintf("chrono-%d.db", c)
+	name := fmtDbName(c)
 	glMtx.Lock()
 	db, ok := glDbs[name]
 	if ok && db != nil {
@@ -93,17 +97,17 @@ func copyHandler(w http.ResponseWriter, r *http.Request) {
 
 func syncHandler(w http.ResponseWriter, r *http.Request) {
 	m := r.URL.Query()
-	c, err := parseIntParam(m, "c")
+	c, _, err := parseIntParam(m, "c")
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	p, err := parseIntParam(m, "p")
+	p, _, err := parseIntParam(m, "p")
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	name := fmt.Sprintf("chrono-%d.db", c)
+	name := fmtDbName(c)
 	glMtx.Lock()
 	db, ok := glDbs[name]
 	if !ok || db == nil {
@@ -128,13 +132,22 @@ func syncHandler(w http.ResponseWriter, r *http.Request) {
 			log.Println(err)
 			return
 		}
+		if len(record) != 2 {
+			continue
+		}
+		if _, err = strconv.Atoi(record[0]); err != nil {
+			continue
+		}
+		if _, err = strconv.Atoi(record[1]); err != nil {
+			continue
+		}
 		if num > 0 {
 			io.WriteString(sql, ",")
 		}
 		io.WriteString(sql, "(")
 		io.WriteString(sql, record[0])
 		io.WriteString(sql, ",")
-		io.WriteString(sql, strconv.Itoa(p))
+		io.WriteString(sql, p)
 		io.WriteString(sql, ",")
 		io.WriteString(sql, record[1])
 		io.WriteString(sql, ")")
@@ -145,12 +158,12 @@ func syncHandler(w http.ResponseWriter, r *http.Request) {
 
 func chronoHandler(w http.ResponseWriter, r *http.Request) {
 	m := r.URL.Query()
-	c, err := parseIntParam(m, "c")
+	c, _, err := parseIntParam(m, "c")
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	p, err := parseIntParam(m, "p")
+	p, _, err := parseIntParam(m, "p")
 	if err != nil {
 		log.Println(err)
 		return
@@ -161,12 +174,12 @@ func chronoHandler(w http.ResponseWriter, r *http.Request) {
 
 func resultHandler(w http.ResponseWriter, r *http.Request) {
 	m := r.URL.Query()
-	c, err := parseIntParam(m, "c")
+	c, _, err := parseIntParam(m, "c")
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	name := fmt.Sprintf("chrono-%d.db", c)
+	name := fmtDbName(c)
 	glMtx.Lock()
 	db, ok := glDbs[name]
 	if !ok || db == nil {

@@ -72,7 +72,9 @@ function chrono_AppendPass() {
         var i = chrono_Incr(g_LastKey);
         var k = chrono_PassKey(i);
 	g_Storage.setItem(k, n + ',' + t);
-	chrono_Log('Pass ' + i + ' number <b>' + n + '</b> time ' + t);
+	g_Number.value = '';
+	g_Number.focus();
+        chrono_Log('Pass ' + i + ' number <b>' + n + '</b> time ' + t);
 }
 
 function chrono_UndoPass() {
